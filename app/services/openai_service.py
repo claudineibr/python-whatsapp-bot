@@ -1,9 +1,11 @@
-from openai import OpenAI
-import shelve
-from dotenv import load_dotenv
 import os
+import shelve
 import time
 import logging
+
+from openai import OpenAI
+from dotenv import load_dotenv
+
 
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -11,10 +13,11 @@ OPENAI_ASSISTANT_ID = os.getenv("OPENAI_ASSISTANT_ID")
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 
-def upload_file(path):
+def upload_file(path, assistant):
     # Upload a file with an "assistants" purpose
     file = client.files.create(
-        file=open("../../data/airbnb-faq.pdf", "rb"), purpose="assistants"
+        file=open("../../data/airbnb-faq.pdf", "rb"),
+        purpose="assistants"
     )
 
 
@@ -26,11 +29,10 @@ def create_assistant(file):
         name="WhatsApp AirBnb Assistant",
         instructions="You're a helpful WhatsApp assistant that can assist guests that are staying in our Paris AirBnb. Use your knowledge base to best respond to customer queries. If you don't know the answer, say simply that you cannot help with question and advice to contact the host directly. Be friendly and funny.",
         tools=[{"type": "retrieval"}],
-        model="gpt-4-1106-preview",
+        model="gpt-3.5-turbo-0125",
         file_ids=[file.id],
     )
     return assistant
-
 
 # Use context manager to ensure the shelf file is closed properly
 def check_if_thread_exists(wa_id):
@@ -67,7 +69,6 @@ def run_assistant(thread, name):
     logging.info(f"Generated message: {new_message}")
     return new_message
 
-
 def generate_response(message_body, wa_id, name):
     # Check if there is already a thread_id for the wa_id
     thread_id = check_if_thread_exists(wa_id)
@@ -85,7 +86,7 @@ def generate_response(message_body, wa_id, name):
         thread = client.beta.threads.retrieve(thread_id)
 
     # Add message to thread
-    message = client.beta.threads.messages.create(
+    client.beta.threads.messages.create(
         thread_id=thread_id,
         role="user",
         content=message_body,

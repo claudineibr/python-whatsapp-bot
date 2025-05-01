@@ -1,10 +1,14 @@
 import logging
 
-from app import create_app
+from app.external import FlaskMessageHandler
 
-
-app = create_app()
+logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
-    logging.info("Flask app started")
-    app.run(host="0.0.0.0", port=8000)
+
+    logger.debug("Starting flask [{}] ...".format(__name__))
+
+    flask_message_handler = FlaskMessageHandler()
+    flask_message_handler.run(name=__name__, host="0.0.0.0", port=8000, debug=True)
+
+    logger.debug("Flask [{}] running...".format(__name__))

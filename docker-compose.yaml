@@ -1,0 +1,33 @@
+services:
+  static-site:
+    image: dockersamples/static-site
+    build: .
+    ports:
+      - "80:80"
+    restart: always
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    depends_on:
+      - python_app
+    command:
+      - "http"
+      - "http://host.docker.internal:8000"
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+    ports:
+      - 4040:4040
+
+  python_app:
+    build: .
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    environment:
+      - FLASK_ENV=development
+    volumes:
+      - .:/app
+    tty: true
+
