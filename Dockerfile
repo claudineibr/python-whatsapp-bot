@@ -7,7 +7,9 @@ WORKDIR /app
 # Copia os arquivos para o container
 COPY requirements.txt .
 
+RUN pip uninstall flask
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install aioflask
 
 COPY . .
 

@@ -1,22 +1,18 @@
 import logging
-import json
 
 from flask import (
     Blueprint,
     request,
-    jsonify,
-    current_app,
 )
 
-from app.decorators.security import signature_required
 from app.services.openai_services import ChatCompletionService
 
 logger = logging.getLogger(__name__)
 
 chat_completion_service = ChatCompletionService()
-chat_completion_blueprint = Blueprint("chat_completion", __name__)
+chat_completion_blueprint = Blueprint(name="chat_completion", import_name=__name__, url_prefix="/openai")
 
-@chat_completion_blueprint.route("/chat_completion/send_message", methods=["POS"])
+@chat_completion_blueprint.route("/chat_completion/send_message", methods=["POST"])
 def send_message():
 
     message_body = request.json.get("message")

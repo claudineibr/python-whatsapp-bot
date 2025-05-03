@@ -27,8 +27,8 @@ class FlaskMessageHandler(object):
     def configure(self) -> None:
 
         logger.debug("Starting configurations...")
-        load_configurations(self.app)
         configure_logging()
+        load_configurations(self.app)
         logger.debug("End configurations...")
 
 
@@ -36,10 +36,19 @@ class FlaskMessageHandler(object):
 
         logger.debug("Starting registering routes...")
 
+        logger.debug("Registering whatsapp routes...")
         from app.routes.whatsapp.whatsapp_routes import whatsapp_blueprint
         self.app.register_blueprint(whatsapp_blueprint)
+        logger.debug("Registered whatsapp routes...")
 
+        logger.debug("Registering chat_completion routes...")
         from app.routes.chat_completion.chat_completion_routes import chat_completion_blueprint
         self.app.register_blueprint(chat_completion_blueprint)
+        logger.debug("Registered chat_completion routes...")
+
+        logger.debug("Registering chat_assistant routes...")
+        from app.routes.chat_assistant.chat_assistant_routes import chat_assistant_blueprint
+        self.app.register_blueprint(chat_assistant_blueprint)
+        logger.debug("Registered chat_assistant routes...")
 
         logger.debug("End registering routes...")

@@ -40,9 +40,9 @@ def send_whatsapp_message():
 
 
 # Call the function
-response = send_whatsapp_message()
-print(response.status_code)
-print(response.json())
+# response = send_whatsapp_message()
+# print(response.status_code)
+# print(response.json())
 
 # --------------------------------------------------------------
 # Send a custom text WhatsApp message
@@ -87,7 +87,7 @@ data = get_text_message_input(
     recipient=RECIPIENT_WAID, text="Hello, this is a test message."
 )
 
-response = send_message(data)
+# response = send_message(data)
 
 # --------------------------------------------------------------
 # Send a custom text WhatsApp message asynchronously
@@ -130,10 +130,10 @@ def get_text_message_input(recipient, text):
     )
 
 
-data = get_text_message_input(
-    recipient=RECIPIENT_WAID, text="Hello, this is a test message."
-)
-
-loop = asyncio.get_event_loop()
-loop.run_until_complete(send_message(data))
-loop.close()
+# data = get_text_message_input(
+#     recipient=RECIPIENT_WAID, text="Hello, this is a test message."
+# )
+#
+# loop = asyncio.get_event_loop()
+# loop.run_until_complete(send_message(data))
+# loop.close()

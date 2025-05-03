@@ -1,12 +1,11 @@
 import os
 import re
+
 from abc import abstractmethod
 from typing import Dict
 
+from flask import abort
 from openai import OpenAI
-from dotenv import load_dotenv
-
-load_dotenv()
 
 
 class OpenAIServicesBase(object):
@@ -26,5 +25,11 @@ class OpenAIServicesBase(object):
         text = re.sub(pattern, "", text).strip()
         pattern = r"\*\*(.*?)\*\*"
         replacement = r"*\1*"
-        whatsapp_style_text = re.sub(pattern, replacement, text)
-        return whatsapp_style_text
+        return re.sub(pattern, replacement, text)
+
+    @staticmethod
+    def input_validate(message: str) -> None:
+        if not message or not message.strip():
+            raise abort(code=400, description="Nenhum dado informado.")
+        if len(message) > 500:
+            raise abort(code=400, description="Pergunta muito longa (máx. 500 caracteres)")

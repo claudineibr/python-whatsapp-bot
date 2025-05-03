@@ -2,9 +2,7 @@ import json
 
 from typing import (
     Dict,
-    Optional,
 )
-from flask import abort
 from functools import cache
 from ._OpenAIServicesBase import OpenAIServicesBase
 
@@ -33,7 +31,7 @@ class ChatCompletionService(OpenAIServicesBase):
 
         message = self.process_text(text=data.get("message"))
         key = data.get("key")
-        self._input_validate(message=message)
+        self.input_validate(message=message)
 
         if key not in session_data:
             initial_prompt = self._initial_prompt(data)
@@ -63,14 +61,6 @@ class ChatCompletionService(OpenAIServicesBase):
         instructions = instructions.replace("{{extraData}}", extra_data)
         instructions = instructions.replace("{{systemData}}", json.dumps(system_data))
         return self.process_text(text=instructions)
-
-
-    @staticmethod
-    def _input_validate(message: str) -> Optional[Dict]:
-        if not message or not message.strip():
-            raise abort(code=400, description="Nenhum dado informado.")
-        if len(message) > 500:
-            raise abort(code=400, description="Pergunta muito longa (máx. 500 caracteres)")
 
     @staticmethod
     def load_history(session_id, limit=10):
