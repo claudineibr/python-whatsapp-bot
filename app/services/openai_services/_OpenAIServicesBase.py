@@ -2,7 +2,7 @@ import os
 import re
 
 from abc import abstractmethod
-from typing import Dict
+from typing import Dict, Callable
 
 from flask import abort
 from openai import OpenAI
@@ -16,7 +16,7 @@ class OpenAIServicesBase(object):
         self.client = OpenAI(api_key=self.openai_api_key)
 
     @abstractmethod
-    def generate_response(self, data: Dict[str, str]) -> str:
+    def generate_response(self, data: Dict[str, str], callback: Callable[[str, str], str] = None) -> Dict[str, int]:
         raise NotImplementedError()
 
     @staticmethod

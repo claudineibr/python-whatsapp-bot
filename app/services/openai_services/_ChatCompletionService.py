@@ -2,12 +2,14 @@ import json
 
 from typing import (
     Dict,
+    Callable,
 )
 from functools import cache
 from ._OpenAIServicesBase import OpenAIServicesBase
 
 json_data = None
 session_data = {}
+
 
 @cache
 class ChatCompletionService(OpenAIServicesBase):
@@ -26,8 +28,7 @@ class ChatCompletionService(OpenAIServicesBase):
             with open('data/json_data.json', 'r', encoding='utf-8') as file:
                 json_data = json.loads(file.read())
 
-
-    def generate_response(self, data: Dict[str, str]) -> str:
+    def generate_response(self, data: Dict[str, str], callback: Callable[[str, str], str] = None) -> str:
 
         message = self.process_text(text=data.get("message"))
         key = data.get("key")
@@ -65,4 +66,3 @@ class ChatCompletionService(OpenAIServicesBase):
     @staticmethod
     def load_history(session_id, limit=10):
         pass
-

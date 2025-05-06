@@ -1,22 +1,20 @@
-import json
 import os
 import shelve
 import logging
 import time
 
-from math import pow
 from json import JSONDecodeError
 
 from typing import (
     Dict,
     Optional,
     List,
+    Callable,
 )
 from functools import cache
 from openai.types.beta import Thread
 from openai.types.beta.threads import Run
 
-from app.util.formattings import format_currency
 from ._OpenAIServicesBase import OpenAIServicesBase
 
 OPENAI_ASSISTANT_ID = os.getenv("OPENAI_ASSISTANT_ID")
@@ -28,7 +26,7 @@ class ChatAssistantService(OpenAIServicesBase):
     def __init__(self) -> None:
         super().__init__()
 
-    def generate_response(self, data: Dict[str, str]) -> str:
+    def generate_response(self, data: Dict[str, str], callback: Callable[[str, str], str] = None) -> Dict[str, int]:
 
         message = self.process_text(text=data.get("message"))
         self.input_validate(message=message)
@@ -47,7 +45,7 @@ class ChatAssistantService(OpenAIServicesBase):
 
         self.create_message(thread_id=thread_id, message=message)
 
-        new_message = self.run_assistant(thread=thread)
+        new_message = self.run_assistant(thread=thread, callback=callback)
         return new_message
 
     def create_message(self, thread_id: str, message: str, retry: int = 3) -> None:
@@ -61,10 +59,11 @@ class ChatAssistantService(OpenAIServicesBase):
                 )
                 retry = 0
             except Exception as e:
+                logger.error(f"Failed to create message for thread {thread_id}: {e}")
                 self.cancel_run_if_active(thread_id=thread_id)
                 retry -= 1
 
-    def run_assistant(self, thread: Thread):
+    def run_assistant(self, thread: Thread, callback: Callable[[str, str], str] = None) -> Dict[str, int]:
 
         assistant = self.client.beta.assistants.retrieve(OPENAI_ASSISTANT_ID)
         run = self.client.beta.threads.runs.create_and_poll(
@@ -75,16 +74,22 @@ class ChatAssistantService(OpenAIServicesBase):
             timeout=60.0
         )
 
-        if run.status == 'requires_action':
-            run = self.handle_requires_action(run=run, thread_id=thread.id)
+        if run.status == "requires_action":
+            if callback is None:
+                self.cancel_run_if_active(thread_id=thread.id)
+                return {"response": "Callback cannot be None", "status_code": 400}
+
+            run = self.handle_requires_action(run=run, thread_id=thread.id, callback=callback)
 
         if run.status == "completed":
             response_message = self.get_response(thread_id=run.thread_id)
             logger.info(f"Generated message: {response_message}")
-            return response_message
+            return {"response": response_message, "status_code": 200}
 
-        if run.status in ['expired', 'failed', 'cancelled', 'incomplete']:
-            return {"response": run.last_error, "status_code": 500}
+        if run.status in ["expired", "failed", "cancelled", "incomplete"]:
+            return {"response": run.last_error.message, "status_code": 500}
+
+        return {"response": "Not found data", "status_code": 404}
 
     def get_response(self, thread_id: str):
 
@@ -108,19 +113,19 @@ class ChatAssistantService(OpenAIServicesBase):
         with shelve.open("threads_db", writeback=True) as threads_shelf:
             threads_shelf[key] = thread_id
 
-    def cancel_run_if_active(self, thread_id: str, wait_interval: int = 2):
+    def cancel_run_if_active(self, thread_id: str, wait_interval: int = 1):
 
         runs = self.client.beta.threads.runs.list(thread_id=thread_id)
         if not runs.data:
             return False
 
         run = runs.data[0]
-        if run.status in ["queued", "in_progress", "cancelling"]:
+        if run.status in ["queued", "in_progress", "cancelling", "requires_action"]:
             logger.debug(f"Cancelling run {run.id} (status: {run.status})")
-            self.client.beta.threads.runs.cancel(run.id)
+            self.client.beta.threads.runs.cancel(run_id=run.id, thread_id=thread_id)
 
             while True:
-                run = self.client.beta.threads.runs.retrieve(run.id)
+                run = self.client.beta.threads.runs.retrieve(run_id=run.id, thread_id=thread_id)
                 if run.status in ["cancelled", "failed", "completed", "expired"]:
                     logger.debug(f"Cancelling run {run.id} (status: {run.status})")
                     return True
@@ -129,14 +134,13 @@ class ChatAssistantService(OpenAIServicesBase):
 
         return False
 
-    def handle_requires_action(self, run: Run, thread_id: str) -> Run:
+    def handle_requires_action(self, run: Run, thread_id: str, callback: Callable[[str, str], str] = None) -> Run:
 
         tool_outputs = []
-        logger.debug("Calling required actions...")
+        logger.debug(f"Calling required actions with function {callback.__name__}")
         for tool in run.required_action.submit_tool_outputs.tool_calls:
             try:
-                args = json.loads(tool.function.arguments)
-                response = self.call_function(name=tool.function.name, args=args)
+                response = callback(tool.function.name, tool.function.arguments)
                 tool_outputs.append({"tool_call_id": tool.id, "output": response})
             except JSONDecodeError as e:
                 logger.error(f"Error processing tool output: {e}")
@@ -149,7 +153,7 @@ class ChatAssistantService(OpenAIServicesBase):
         while run.status not in ["completed", "failed", "cancelled", "expired"]:
 
             if run.status == 'requires_action':
-                run = self.handle_requires_action(run=run, thread_id=thread_id)
+                run = self.handle_requires_action(run=run, thread_id=thread_id, callback=callback)
 
             run = self.client.beta.threads.runs.poll(
                 thread_id=thread_id,
@@ -169,51 +173,3 @@ class ChatAssistantService(OpenAIServicesBase):
         except Exception as e:
             logger.error(f"Error submitting tool outputs: {e}")
             raise e
-
-    def call_function(self, name, args) -> str:
-
-        logger.debug(f"Calling function: {name} with args: {args}")
-        if name == "send_email":
-            return self.send_email(args)
-        if name == "calculate_financing":
-            return self.calculate_financing(args)
-
-        return "function not found"
-
-    @staticmethod
-    def send_email(args) -> str:
-
-        logger.debug(f"Calling send_email with args: {args}")
-        email = args.get("recipient_email")
-        return "success"
-
-    @staticmethod
-    def calculate_financing(args: Dict[str, float | int | str]) -> str:
-
-        logger.debug(f"Calling calculate_financing with args: {args}")
-
-
-        property_value = args.get("property_value")
-        initial_deposit = args.get("initial_deposit")
-        annual_interest_rate = args.get("annual_interest_rate")
-        term_years = args.get("term_years")
-        cpf = args.get("cpf")
-        date_of_birth = args.get("date_of_birth")
-        monthly_income = args.get("monthly_income")
-
-        if initial_deposit >= property_value:
-            return "A entrada deve ser menor que o valor do imóvel."
-        if annual_interest_rate <= 0 or term_years <= 0:
-            return "Taxa de juros e prazo devem ser maiores que zero."
-
-        financed_value = property_value - initial_deposit
-        monthly_fee = (annual_interest_rate / 100) / 12
-        number_of_installments = term_years * 12
-        monthly_payment = (financed_value * monthly_fee) / (1 - pow(1 + monthly_fee, -number_of_installments))
-        total_cost = monthly_payment * number_of_installments
-
-        return json.dumps({
-            "financed_value": format_currency(financed_value),
-            "monthly_payment": format_currency(monthly_payment),
-            "total_cost": format_currency(total_cost)
-        })
