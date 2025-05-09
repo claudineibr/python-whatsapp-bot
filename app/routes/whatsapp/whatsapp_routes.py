@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import json
 
@@ -24,7 +25,7 @@ def webhook_get():
 @whatsapp_blueprint.route("/webhook", methods=["POST"])
 @signature_required
 def webhook_post():
-    return handle_message()
+    return asyncio.run(handle_message())
 
 @whatsapp_blueprint.route("/send_message", methods=["POS"])
 def send_message():
@@ -32,7 +33,7 @@ def send_message():
     return whatsapp_service.send_message(message=message), 200
 
 
-def handle_message():
+async def handle_message():
     body = request.get_json()
     status_update = (
         body.get("entry", [{}])[0]
@@ -47,7 +48,7 @@ def handle_message():
 
     try:
         if whatsapp_service.is_valid_whatsapp_message(body=body):
-            whatsapp_service.process_whatsapp_message_with_open_ai(body)
+            await whatsapp_service.process_whatsapp_message_with_open_ai(body)
             return jsonify({"status": "ok"}), 200
         else:
             return (

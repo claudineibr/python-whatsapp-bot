@@ -28,7 +28,7 @@ class ChatCompletionService(OpenAIServicesBase):
             with open('data/json_data.json', 'r', encoding='utf-8') as file:
                 json_data = json.loads(file.read())
 
-    def generate_response(self, data: Dict[str, str], callback: Callable[[str, str], str] = None) -> str:
+    async def generate_response(self, data: Dict[str, str], callback: Callable[[str, str], str] = None) -> str:
 
         message = self.process_text(text=data.get("message"))
         key = data.get("key")
@@ -41,7 +41,7 @@ class ChatCompletionService(OpenAIServicesBase):
             ]
 
         session_data[key].append({"role": "user", "content": message})
-        response = self.client.chat.completions.create(
+        response = await self.client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=session_data[key],
             temperature=0.8,

@@ -23,7 +23,7 @@ class WhatsAppServices(object):
 
         self.open_ai_chat = open_ai_chat
 
-    def process_whatsapp_message_with_open_ai(self, body: Dict[str, Any]):
+    async def process_whatsapp_message_with_open_ai(self, body: Dict[str, Any]):
 
         wa_id = body["entry"][0]["changes"][0]["value"]["contacts"][0]["wa_id"]
         name = body["entry"][0]["changes"][0]["value"]["contacts"][0]["profile"]["name"]
@@ -31,7 +31,7 @@ class WhatsAppServices(object):
         message_body = message["text"]["body"]
 
         data = {"key": wa_id, "name": name, "message": message_body}
-        response = self.open_ai_chat.generate_response(data=data)
+        response = await self.open_ai_chat.generate_response(data=data)
         data = self.__get_text_message_input(recipient=wa_id, text=response)
         return self.__send_message(data=data)
 

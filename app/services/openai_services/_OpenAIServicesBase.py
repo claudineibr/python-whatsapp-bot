@@ -5,7 +5,7 @@ from abc import abstractmethod
 from typing import Dict, Callable
 
 from flask import abort
-from openai import OpenAI
+from openai import AsyncOpenAI
 
 
 class OpenAIServicesBase(object):
@@ -13,10 +13,10 @@ class OpenAIServicesBase(object):
 
         self.openai_assistant_id = os.getenv("OPENAI_ASSISTANT_ID")
         self.openai_api_key = os.getenv("OPENAI_API_KEY")
-        self.client = OpenAI(api_key=self.openai_api_key)
+        self.client = AsyncOpenAI(api_key=self.openai_api_key)
 
     @abstractmethod
-    def generate_response(self, data: Dict[str, str], callback: Callable[[str, str], str] = None) -> Dict[str, int]:
+    async def generate_response(self, data: Dict[str, str], callback: Callable[[str, str], str] = None) -> Dict[str, int]:
         raise NotImplementedError()
 
     @staticmethod
