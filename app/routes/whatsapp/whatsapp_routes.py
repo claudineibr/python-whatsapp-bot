@@ -18,16 +18,16 @@ whatsapp_service = WhatsAppServices(open_ai_chat=ChatCompletionService())
 whatsapp_blueprint = Blueprint("whatsapp", __name__)
 logger = logging.getLogger(__name__)
 
-@whatsapp_blueprint.route("/webhook", methods=["GET"])
+@whatsapp_blueprint.route(rule="/webhook", methods=["GET"])
 def webhook_get():
     return _verify()
 
-@whatsapp_blueprint.route("/webhook", methods=["POST"])
+@whatsapp_blueprint.route(rule="/webhook", methods=["POST"])
 @signature_required
 def webhook_post():
     return asyncio.run(handle_message())
 
-@whatsapp_blueprint.route("/send_message", methods=["POS"])
+@whatsapp_blueprint.route(rule="/send_message", methods=["POS"])
 def send_message():
     message = request.json.get("message")
     return whatsapp_service.send_message(message=message), 200
@@ -42,8 +42,8 @@ async def handle_message():
         .get("statuses")
     )
     if status_update:
-        logging.debug(f"request body: {body}")
-        logging.info("Received a WhatsApp status update.")
+        logger.debug(f"request body: {body}")
+        logger.info("Received a WhatsApp status update.")
         return jsonify({"status": "ok"}), 200
 
     try:
@@ -56,7 +56,7 @@ async def handle_message():
                 404,
             )
     except json.JSONDecodeError:
-        logging.error("Failed to decode JSON")
+        logger.error("Failed to decode JSON")
         return jsonify({"status": "error", "message": "Invalid JSON provided"}), 400
 
 def _verify():
@@ -68,13 +68,13 @@ def _verify():
         # Check the mode and token sent are correct
         if mode == "subscribe" and token == current_app.config["VERIFY_TOKEN"]:
             # Respond with 200 OK and challenge token from the request
-            logging.info("WEBHOOK_VERIFIED")
+            logger.info("WEBHOOK_VERIFIED")
             return challenge, 200
         else:
             # Responds with '403 Forbidden' if verify tokens do not match
-            logging.info("VERIFICATION_FAILED")
+            logger.info("VERIFICATION_FAILED")
             return jsonify({"status": "error", "message": "Verification failed"}), 403
     else:
         # Responds with '400 Bad Request' if verify tokens do not match
-        logging.info("MISSING_PARAMETER")
+        logger.info("MISSING_PARAMETER")
         return jsonify({"status": "error", "message": "Missing parameters"}), 400
