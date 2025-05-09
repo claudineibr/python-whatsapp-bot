@@ -19,7 +19,9 @@ services:
       - 4040:4040
 
   python_app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: always
     env_file:
       - .env
