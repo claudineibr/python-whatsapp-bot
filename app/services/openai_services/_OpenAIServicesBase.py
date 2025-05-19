@@ -23,8 +23,7 @@ class OpenAIServicesBase(object):
         )
 
     @abstractmethod
-    async def generate_response(self, data: Dict[str, str], callback: Callable[[str, str], str] = None) -> Dict[
-        str, int]:
+    async def generate_response(self, data: Dict[str, str], callback: Callable[[str, str], str] = None) ->  str:
         raise NotImplementedError()
 
     @staticmethod
@@ -38,6 +37,6 @@ class OpenAIServicesBase(object):
     @staticmethod
     def input_validate(message: str) -> None:
         if not message or not message.strip():
-            raise abort(code=400, description="Nenhum dado informado.")
+            raise abort(code=400, description="No data reported..")
         if len(message) > 500:
-            raise abort(code=400, description="Pergunta muito longa (máx. 500 caracteres)")
+            raise abort(code=400, description="Question too long (max 500 characters)")

@@ -4,5 +4,5 @@ from decimal import (
 )
 
 
-def format_currency(value):
+def format_currency(value: str) -> str:
     return f"R$ {Decimal(value).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)}"

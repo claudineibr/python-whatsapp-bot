@@ -8,7 +8,7 @@ from flask import (
     jsonify,
     current_app,
 )
-
+from werkzeug.exceptions import HTTPException
 from app.decorators.security import signature_required
 from app.services.openai_services import ChatCompletionService
 from app.services.whatsapp_services import WhatsAppServices
@@ -48,7 +48,7 @@ async def handle_message():
 
     try:
         if whatsapp_service.is_valid_whatsapp_message(body=body):
-            await whatsapp_service.process_whatsapp_message_with_open_ai(body)
+            await whatsapp_service.process_whatsapp_message_with_open_ai(body=body)
             return jsonify({"status": "ok"}), 200
         else:
             return (
@@ -78,3 +78,17 @@ def _verify():
         # Responds with '400 Bad Request' if verify tokens do not match
         logger.info("MISSING_PARAMETER")
         return jsonify({"status": "error", "message": "Missing parameters"}), 400
+
+@whatsapp_blueprint.errorhandler(HTTPException)
+def handle_exception(e):
+    """Return JSON instead of HTML for HTTP errors."""
+    # start with the correct headers and status code from the error
+    response = e.get_response()
+    # replace the body with JSON
+    response.data = json.dumps({
+        "code": e.code,
+        "name": e.name,
+        "description": e.description,
+    })
+    response.content_type = "application/json"
+    return response

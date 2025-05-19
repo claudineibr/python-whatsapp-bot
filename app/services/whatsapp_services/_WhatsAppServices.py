@@ -4,7 +4,6 @@ import json
 
 from functools import cache
 
-
 from typing import Dict, Any
 
 from flask import (
@@ -17,13 +16,14 @@ from app.services.openai_services import ChatCompletionService
 
 logger = logging.getLogger(__name__)
 
+
 @cache
 class WhatsAppServices(object):
     def __init__(self, open_ai_chat: ChatCompletionService) -> None:
 
         self.open_ai_chat = open_ai_chat
 
-    async def process_whatsapp_message_with_open_ai(self, body: Dict[str, Any]):
+    async def process_whatsapp_message_with_open_ai(self, body: Dict[str, Any]) -> tuple[Response, int] | Response:
 
         wa_id = body["entry"][0]["changes"][0]["value"]["contacts"][0]["wa_id"]
         name = body["entry"][0]["changes"][0]["value"]["contacts"][0]["profile"]["name"]
@@ -37,9 +37,9 @@ class WhatsAppServices(object):
 
     def send_message(self, message: str) -> tuple[Response, int] | Response:
         data = self.__get_text_message_input(current_app.config["RECIPIENT_WAID"], message)
-        return self.__send_message(data)
+        return self.__send_message(data=data)
 
-    def __send_message(self, data) -> tuple[Response, int] | Response:
+    def __send_message(self, data: str) -> tuple[Response, int] | Response:
         try:
             headers = {
                 "Content-type": "application/json",
@@ -64,7 +64,7 @@ class WhatsAppServices(object):
             return response
 
     @staticmethod
-    def __get_text_message_input(recipient: str, text: str):
+    def __get_text_message_input(recipient: str, text: str) -> str:
         return json.dumps(
             {
                 "messaging_product": "whatsapp",
@@ -87,7 +87,7 @@ class WhatsAppServices(object):
         )
 
     @staticmethod
-    def __log_http_response(response: Response):
+    def __log_http_response(response: Response) -> None:
         logger.debug(f"Status: {response.status_code}")
         logger.debug(f"Content-type: {response.headers.get('content-type')}")
         logger.debug(f"Body: {response.text}")

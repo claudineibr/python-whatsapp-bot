@@ -12,6 +12,8 @@ from typing import (
     Callable,
 )
 from functools import cache
+
+from flask import abort
 from openai.types.beta import Thread
 from openai.types.beta.threads import Run
 
@@ -26,8 +28,7 @@ class ChatAssistantService(OpenAIServicesBase):
     def __init__(self) -> None:
         super().__init__()
 
-    async def generate_response(self, data: Dict[str, str], callback: Callable[[str, str], str] = None) -> Dict[
-        str, int]:
+    async def generate_response(self, data: Dict[str, str], callback: Callable[[str, str], str] = None) -> str:
 
         message = self.process_text(text=data.get("message"))
         self.input_validate(message=message)
@@ -64,7 +65,7 @@ class ChatAssistantService(OpenAIServicesBase):
                 await self.cancel_run_if_active(thread_id=thread_id)
                 retry -= 1
 
-    async def run_assistant(self, thread: Thread, callback: Callable[[str, str], str] = None) -> Dict[str, int]:
+    async def run_assistant(self, thread: Thread, callback: Callable[[str, str], str] = None) -> str:
 
         assistant = await self.client.beta.assistants.retrieve(OPENAI_ASSISTANT_ID)
         run = await self.client.beta.threads.runs.create_and_poll(
@@ -78,19 +79,19 @@ class ChatAssistantService(OpenAIServicesBase):
         if run.status == "requires_action":
             if callback is None:
                 await self.cancel_run_if_active(thread_id=thread.id)
-                return {"response": "Callback cannot be None", "status_code": 400}
+                raise abort(code=400, description="Callback cannot be None")
 
             run = await self.handle_requires_action(run=run, thread_id=thread.id, callback=callback)
 
         if run.status == "completed":
             response_message = await self.get_response(thread_id=run.thread_id)
             logger.info(f"Generated message: {response_message}")
-            return {"response": response_message, "status_code": 200}
+            return response_message
 
         if run.status in ["expired", "failed", "cancelled", "incomplete"]:
-            return {"response": run.last_error.message, "status_code": 500}
+            raise abort(code=500, description=run.last_error.message)
 
-        return {"response": "Not found data", "status_code": 404}
+        raise abort(code=404, description="Not found data")
 
     async def get_response(self, thread_id: str):
 
@@ -101,18 +102,6 @@ class ChatAssistantService(OpenAIServicesBase):
             message_content.value = message_content.value.replace(annotation.text, '')
 
         return message_content.value
-
-    @staticmethod
-    def check_if_thread_exists(key: str) -> Optional[str]:
-
-        with shelve.open("threads_db") as threads_shelf:
-            return threads_shelf.get(key, None)
-
-    @staticmethod
-    def store_thread(key: str, thread_id: str) -> None:
-
-        with shelve.open("threads_db", writeback=True) as threads_shelf:
-            threads_shelf[key] = thread_id
 
     async def cancel_run_if_active(self, thread_id: str, wait_interval: int = 1):
 
@@ -174,3 +163,15 @@ class ChatAssistantService(OpenAIServicesBase):
         except Exception as e:
             logger.error(f"Error submitting tool outputs: {e}")
             raise e
+
+    @staticmethod
+    def check_if_thread_exists(key: str) -> Optional[str]:
+
+        with shelve.open("threads_db") as threads_shelf:
+            return threads_shelf.get(key, None)
+
+    @staticmethod
+    def store_thread(key: str, thread_id: str) -> None:
+
+        with shelve.open("threads_db", writeback=True) as threads_shelf:
+            threads_shelf[key] = thread_id

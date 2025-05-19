@@ -1,11 +1,11 @@
 import json
 import logging
-import asyncio
 from typing import Dict, Any
 
 from flask import (
     Blueprint,
     request,
+    jsonify,
 )
 
 from app.services.openai_services import ChatAssistantService
@@ -16,14 +16,14 @@ logger = logging.getLogger(__name__)
 chat_assistant_service = ChatAssistantService()
 chat_assistant_blueprint = Blueprint("chat_assistant", import_name=__name__, url_prefix="/openai")
 
+
 @chat_assistant_blueprint.route(rule="/chat_assistant/send_message", methods=["POST"])
 async def send_message():
-
     message_body = request.json.get("message")
     key = request.json.get("key")
     data = {"key": key, "message": message_body}
     response = await chat_assistant_service.generate_response(data=data, callback=call_function)
-    return response.get("response"), response.get("status_code")
+    return jsonify({"data": response}), 200
 
 
 def call_function(name: str, args: str) -> str:
@@ -36,14 +36,14 @@ def call_function(name: str, args: str) -> str:
 
     return "function not found"
 
-def send_email(args) -> str:
 
+def send_email(args) -> str:
     logger.debug(f"Calling send_email with args: {args}")
     email = args.get("recipient_email")
     return "success"
 
-def calculate_financing(args: Dict[str, float | int | str]) -> str:
 
+def calculate_financing(args: Dict[str, float | int | str]) -> str:
     logger.debug(f"Calling calculate_financing with args: {args}")
     cpf = args.get("cpf")
     date_of_birth = args.get("date_of_birth")
@@ -53,15 +53,14 @@ def calculate_financing(args: Dict[str, float | int | str]) -> str:
     sac = calculate_financing_sac(args=args)
     return json.dumps([price, sac])
 
-def calculate_financing_price(args: Dict[str, float | int | str]) -> str | dict[str, str | Any]:
 
+def calculate_financing_price(args: Dict[str, float | int | str]) -> str | dict[str, str | Any]:
     logger.debug(f"Calling calculate_financing with args: {args}")
 
     property_value = args.get("property_value")
     initial_deposit = args.get("initial_deposit")
     annual_interest_rate = args.get("annual_interest_rate")
     term_years = args.get("term_years")
-
 
     if initial_deposit >= property_value:
         return "A entrada deve ser menor que o valor do imóvel."
@@ -81,8 +80,8 @@ def calculate_financing_price(args: Dict[str, float | int | str]) -> str | dict[
         "total_cost": format_currency(value=total_cost)
     }
 
-def calculate_financing_sac(args: Dict[str, float | int | str]):
 
+def calculate_financing_sac(args: Dict[str, float | int | str]):
     property_value = args.get("property_value")
     initial_deposit = args.get("initial_deposit")
     annual_interest_rate = args.get("annual_interest_rate")
