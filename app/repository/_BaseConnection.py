@@ -1,32 +1,24 @@
 import logging
+from typing import AsyncGenerator
 
-from sqlalchemy import (
-    create_engine,
-    text,
-)
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
-Base = declarative_base()
+from app.extensions import async_db
 
 logger = logging.getLogger(__name__)
 
+
 class DatabaseConnection:
-    def __init__(self, db_name: str) -> None:
 
-        self.db_name = db_name
-        engine = self.__get_engine()
-        Base.metadata.create_all(engine)
-        self.db_session = sessionmaker(bind=engine)
+    @classmethod
+    async def test_connection(cls) -> bool:
+        async with async_db.get_async_session() as session:
+            result = await session.execute(text('SELECT 1'))
+            value = result.scalar()
+            return value == 1
 
-    def test_connection(self):
-        with self.db_session() as session:
-            session.execute(text('SELECT 1'))
-            logger.debug(f"Connection successful to database: {self.db_name}")
-
-    def __get_engine(self):
-        try:
-            return create_engine(f"postgresql+psycopg2://root:root@host.docker.internal:5433/{self.db_name}")
-        except Exception as e:
-            logger.exception(f"Error load connection to database: {self.db_name}")
-            raise e
+    @classmethod
+    async def get_async_session(cls) -> AsyncGenerator[AsyncSession, None]:
+        async with async_db.get_async_session() as session:
+            yield session

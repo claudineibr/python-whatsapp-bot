@@ -37,8 +37,8 @@ This guide will walk you through the process of creating a WhatsApp bot using th
 Init alembic files 
 ```
 docker-compose exec app flask db init
-docker-compose exec app flask db migrate -m "Initial migration"
-docker-compose exec app flask db upgrade
+docker-compose exec python_app alembic revision --autogenerate -m "Init"
+docker-compose exec python_app alembic upgrade head
 ```
 
 ```

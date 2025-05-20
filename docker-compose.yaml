@@ -32,4 +32,5 @@ services:
     volumes:
       - .:/app
     tty: true
-
+    command: >
+      sh -c "alembic upgrade head"

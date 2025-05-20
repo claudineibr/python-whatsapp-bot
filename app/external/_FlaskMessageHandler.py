@@ -1,44 +1,47 @@
+import asyncio
 import logging
 
-from alembic import command
-from flask import Flask, Config
+from flask import Flask
 
 from app.config import (
     load_configurations,
     configure_logging,
 )
-from app.extensions import db, migrate, async_db
-from app.repository import DatabaseConnection
-from migrations.env import run_migrations_online
+from app.extensions import (
+    db,
+    migrate,
+    async_db,
+)
+from repository.whatsapp import WhatsAppRepository
 
 logger = logging.getLogger()
 
 
 class FlaskMessageHandler(object):
     def __init__(self) -> None:
-
         self.routes = {}
         self.app = None
 
-    def run(self, name: str, host: str, port: int, debug: bool = False) -> Flask:
-
-        self.app = Flask(name)
-        self.configure()
+    def run(self, host: str, port: int, debug: bool = False) -> Flask:
+        self.create_app()
+        self.test_database_connections()
         self.register_route()
-        self.execute_migration()
         self.app.run(host=host, port=port, debug=debug)
         return self.app
 
-    def configure(self) -> None:
+    def create_app(self) -> Flask:
+        self.app = Flask(__name__)
+        self.configure()
+        self.init_database_connection()
+        return self.app
 
+    def configure(self) -> None:
         logger.debug("Starting configurations...")
         configure_logging()
         load_configurations(self.app)
         logger.debug("End configurations...")
 
-
     def register_route(self) -> None:
-
         logger.debug("Starting registering routes...")
 
         logger.debug("Registering whatsapp routes...")
@@ -58,16 +61,16 @@ class FlaskMessageHandler(object):
 
         logger.debug("End registering routes...")
 
-    def execute_migration(self) -> None:
-        logger.debug("Starting executing migration...")
-
-        logger.debug("Starting connections...")
+    def init_database_connection(self) -> None:
+        logger.debug("Starting init database connection...")
         db.init_app(app=self.app)
         migrate.init_app(app=self.app, db=db)
         async_db.init_app(app=self.app)
-        # with self.app.app_context():
-        #     db.create_all()
-        logger.debug("Starting whatsapp migration...")
-        # whatsapp_repository = DatabaseConnection("postgres")
-        # whatsapp_repository.test_connection()
-        logger.debug("End whatsapp migration...")
+        logger.debug("End database connection...")
+
+    @staticmethod
+    def test_database_connections() -> None:
+        logger.debug("Starting test database connections...")
+        whatsapp_repository = WhatsAppRepository()
+        asyncio.run(whatsapp_repository.test_connection())
+        logger.debug("End test database connections")

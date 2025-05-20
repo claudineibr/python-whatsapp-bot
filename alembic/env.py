@@ -1,29 +1,31 @@
 import asyncio
 import os
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
+from external import FlaskMessageHandler
+from repository.whatsapp.model import *
 
 from alembic import context
+from app.extensions import db, async_db
 
-from app.extensions import db
+flask_message_handler = FlaskMessageHandler()
+flask_message_handler.create_app()
 
-# Sobrescreve a URL se estiver em container Docker
-database_url = os.getenv("ASYNC_DATABASE_URI", context.config.get_main_option("sqlalchemy.url"))
-context.config.set_main_option("sqlalchemy.url", database_url)
+config = context.config
+target_metadata = db.metadata
 
 def include_object(object, name, type_, reflected, compare_to):
-    # Filtra objetos por schema
-    if hasattr(object, 'schema'):
-        if object.schema == 'public':
-            return False  # Ignora o schema public
-    return True
+    return not getattr(object, 'schema', None) == 'public'
 
 
 def run_migrations_online():
-    connectable = db.engine
-
+    connectable = async_db.engine
     def do_run_migrations(connection):
         context.configure(
             connection=connection,
-            target_metadata=db.metadata,
+            target_metadata=target_metadata,
             compare_type=True,
             include_schemas=True,
             include_object=include_object,
@@ -37,3 +39,5 @@ def run_migrations_online():
             await connection.run_sync(do_run_migrations)
 
     asyncio.run(run_async_migrations())
+
+run_migrations_online()
