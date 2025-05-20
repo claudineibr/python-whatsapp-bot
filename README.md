@@ -32,6 +32,20 @@ This guide will walk you through the process of creating a WhatsApp bot using th
   - [Datalumina](#datalumina)
   - [Tutorials](#tutorials)
 
+## Commands
+
+Init alembic files 
+```
+docker-compose exec app flask db init
+docker-compose exec app flask db migrate -m "Initial migration"
+docker-compose exec app flask db upgrade
+```
+
+```
+docker-compose exec python_app alembic revision --autogenerate -m "Init Dababase"
+```
+
+
 ## Get Started
 
 1. **Overview & Setup**: Begin your journey [here](https://developers.facebook.com/docs/whatsapp/cloud-api/get-started).

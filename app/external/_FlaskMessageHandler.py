@@ -1,11 +1,15 @@
 import logging
 
-from flask import Flask
+from alembic import command
+from flask import Flask, Config
 
 from app.config import (
     load_configurations,
     configure_logging,
 )
+from app.extensions import db, migrate, async_db
+from app.repository import DatabaseConnection
+from migrations.env import run_migrations_online
 
 logger = logging.getLogger()
 
@@ -21,6 +25,7 @@ class FlaskMessageHandler(object):
         self.app = Flask(name)
         self.configure()
         self.register_route()
+        self.execute_migration()
         self.app.run(host=host, port=port, debug=debug)
         return self.app
 
@@ -52,3 +57,17 @@ class FlaskMessageHandler(object):
         logger.debug("Registered chat_assistant routes...")
 
         logger.debug("End registering routes...")
+
+    def execute_migration(self) -> None:
+        logger.debug("Starting executing migration...")
+
+        logger.debug("Starting connections...")
+        db.init_app(app=self.app)
+        migrate.init_app(app=self.app, db=db)
+        async_db.init_app(app=self.app)
+        # with self.app.app_context():
+        #     db.create_all()
+        logger.debug("Starting whatsapp migration...")
+        # whatsapp_repository = DatabaseConnection("postgres")
+        # whatsapp_repository.test_connection()
+        logger.debug("End whatsapp migration...")
