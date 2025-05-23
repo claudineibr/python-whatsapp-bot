@@ -8,30 +8,6 @@ This guide will walk you through the process of creating a WhatsApp bot using th
 2. A business app — If you don't have one, you can [learn to create a business app here](https://developers.facebook.com/docs/development/create-an-app/). If you don't see an option to create a business app, select **Other** > **Next** > **Business**.
 3. Familiarity with Python to follow the tutorial.
 
-
-## Table of Contents
-
-- [Build AI WhatsApp Bots with Pure Python](#build-ai-whatsapp-bots-with-pure-python)
-  - [Prerequisites](#prerequisites)
-  - [Table of Contents](#table-of-contents)
-  - [Get Started](#get-started)
-  - [Step 1: Select Phone Numbers](#step-1-select-phone-numbers)
-  - [Step 2: Send Messages with the API](#step-2-send-messages-with-the-api)
-  - [Step 3: Configure Webhooks to Receive Messages](#step-3-configure-webhooks-to-receive-messages)
-      - [Start your app](#start-your-app)
-      - [Launch ngrok](#launch-ngrok)
-      - [Integrate WhatsApp](#integrate-whatsapp)
-      - [Testing the Integration](#testing-the-integration)
-  - [Step 4: Understanding Webhook Security](#step-4-understanding-webhook-security)
-      - [Verification Requests](#verification-requests)
-      - [Validating Verification Requests](#validating-verification-requests)
-      - [Validating Payloads](#validating-payloads)
-  - [Step 5: Learn about the API and Build Your App](#step-5-learn-about-the-api-and-build-your-app)
-  - [Step 6: Integrate AI into the Application](#step-6-integrate-ai-into-the-application)
-  - [Step 7: Add a Phone Number](#step-7-add-a-phone-number)
-  - [Datalumina](#datalumina)
-  - [Tutorials](#tutorials)
-
 ## Commands
 
 Init alembic files 
@@ -41,8 +17,9 @@ docker-compose exec python_app alembic revision --autogenerate -m "Init"
 docker-compose exec python_app alembic upgrade head
 ```
 
+Rebuild Dockerfile
 ```
-docker-compose exec python_app alembic revision --autogenerate -m "Init Dababase"
+docker-compose build
 ```
 
 

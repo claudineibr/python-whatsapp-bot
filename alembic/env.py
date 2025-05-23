@@ -5,7 +5,6 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from external import FlaskMessageHandler
-from repository.whatsapp.model import *
 
 from alembic import context
 from app.extensions import db, async_db

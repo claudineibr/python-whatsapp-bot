@@ -1,7 +1,9 @@
-import asyncio
 import logging
 
 from flask import Flask
+from hypercorn.asyncio import serve
+from hypercorn.config import Config
+import asyncio
 
 from app.config import (
     load_configurations,
@@ -22,11 +24,17 @@ class FlaskMessageHandler(object):
         self.routes = {}
         self.app = None
 
-    def run(self, host: str, port: int, debug: bool = False) -> Flask:
+    async def run(self, host: str = "0.0.0.0", port: int = 8000, debug: bool = False) -> Flask:
         self.create_app()
         self.test_database_connections()
         self.register_route()
-        self.app.run(host=host, port=port, debug=debug)
+
+        config = Config()
+        config.bind = [f"{host}:{port}"]
+        print(f"Starting Hypercorn server on {host}:{port} ...")
+        await serve(self.app, config)
+        #
+        # self.app.run(host=host, port=port, debug=debug)
         return self.app
 
     def create_app(self) -> Flask:

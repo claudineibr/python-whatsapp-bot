@@ -16,7 +16,7 @@ services:
     environment:
       NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
     ports:
-      - 4040:4040
+      - "4040:4040"
 
   python_app:
     build:
@@ -32,5 +32,3 @@ services:
     volumes:
       - .:/app
     tty: true
-    command: >
-      sh -c "alembic upgrade head"
