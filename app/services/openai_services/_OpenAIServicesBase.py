@@ -5,8 +5,8 @@ import re
 from abc import abstractmethod
 from typing import Dict, Callable
 
-from flask import abort
 from openai import AsyncOpenAI
+from fastapi import HTTPException
 
 
 class OpenAIServicesBase(object):
@@ -37,6 +37,6 @@ class OpenAIServicesBase(object):
     @staticmethod
     def input_validate(message: str) -> None:
         if not message or not message.strip():
-            raise abort(code=400, description="No data reported..")
+            raise HTTPException(status_code=400, detail="No data reported..")
         if len(message) > 500:
-            raise abort(code=400, description="Question too long (max 500 characters)")
+            raise HTTPException(status_code=400, detail="Question too long (max 500 characters)")

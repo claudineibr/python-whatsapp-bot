@@ -1,17 +1,14 @@
 import requests
 import logging
 import json
+import os
 
 from functools import cache
 
 from typing import Dict, Any
 
-from flask import (
-    current_app,
-    jsonify,
-)
+from fastapi import HTTPException
 from requests import Response
-
 from app.services.openai_services import ChatCompletionService
 
 logger = logging.getLogger(__name__)
@@ -23,7 +20,7 @@ class WhatsAppServices(object):
 
         self.open_ai_chat = open_ai_chat
 
-    async def process_whatsapp_message_with_open_ai(self, body: Dict[str, Any]) -> tuple[Response, int] | Response:
+    async def process_whatsapp_message_with_open_ai(self, body: Dict[str, Any]) -> Response:
 
         wa_id = body["entry"][0]["changes"][0]["value"]["contacts"][0]["wa_id"]
         name = body["entry"][0]["changes"][0]["value"]["contacts"][0]["profile"]["name"]
@@ -35,17 +32,17 @@ class WhatsAppServices(object):
         data = self.__get_text_message_input(recipient=wa_id, text=response)
         return self.__send_message(data=data)
 
-    def send_message(self, message: str) -> tuple[Response, int] | Response:
-        data = self.__get_text_message_input(current_app.config["RECIPIENT_WAID"], message)
+    def send_message(self, message: str) -> Response:
+        data = self.__get_text_message_input(os.getenv("RECIPIENT_WAID"), message)
         return self.__send_message(data=data)
 
-    def __send_message(self, data: str) -> tuple[Response, int] | Response:
+    def __send_message(self, data: str) -> Response:
         try:
             headers = {
                 "Content-type": "application/json",
-                "Authorization": f"Bearer {current_app.config['ACCESS_TOKEN']}",
+                "Authorization": f"Bearer {os.getenv('ACCESS_TOKEN')}",
             }
-            url = f"https://graph.facebook.com/{current_app.config['VERSION']}/{current_app.config['PHONE_NUMBER_ID']}/messages"
+            url = f"https://graph.facebook.com/{os.getenv("VERSION")}/{os.getenv("PHONE_NUMBER_ID")}/messages"
             response = requests.post(
                 url=url,
                 data=data,
@@ -55,10 +52,10 @@ class WhatsAppServices(object):
             response.raise_for_status()
         except requests.Timeout:
             logger.error("Timeout occurred while sending message")
-            return jsonify({"status": "error", "message": "Request timed out"}), 408
+            raise HTTPException(status_code=408, detail="Timeout occurred while sending message")
         except requests.RequestException as e:  # This will catch any general request exception
             logger.error(f"Request failed due to: {e}")
-            return jsonify({"status": "error", "message": "Failed to send message"}), 500
+            raise HTTPException(status_code=408, detail="Failed to send message")
         else:
             self.__log_http_response(response=response)
             return response

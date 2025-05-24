@@ -1,18 +1,20 @@
 import logging
 import hashlib
 import hmac
+import os
 
 from functools import wraps
-from flask import (
-    current_app,
-    jsonify,
-    request,
-)
+
+import jwt
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
 logger = logging.getLogger(__name__)
+
 
 def validate_signature(payload, signature):
     expected_signature = hmac.new(
-        bytes(current_app.config["APP_SECRET"], "latin-1"),
+        bytes(os.getenv("APP_SECRET"), "latin-1"),
         msg=payload.encode("utf-8"),
         digestmod=hashlib.sha256,
     ).hexdigest()
@@ -32,26 +34,26 @@ def signature_required(f):
     return decorated_function
 
 
-def required_authorization(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-
-        token = None
-        if 'Authorization' in request.headers:
-            bearer = request.headers['Authorization']
-            token = bearer.replace('Bearer ', '')
-
-        if not token:
-            return jsonify({'mensagem': 'Token ausente'}), 401
-
-        try:
-            payload = jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=['HS256'])
-            request.user_id = payload['user_id']
-        except jwt.ExpiredSignatureError:
-            return jsonify({'mensagem': 'Token expirado'}), 401
-        except jwt.InvalidTokenError:
-            return jsonify({'mensagem': 'Token inválido'}), 401
-
-        return f(*args, **kwargs)
-
-    return decorated_function
+# def required_authorization(f):
+#     @wraps(f)
+#     def decorated_function(*args, **kwargs):
+#
+#         token = None
+#         if 'Authorization' in request.headers:
+#             bearer = request.headers['Authorization']
+#             token = bearer.replace('Bearer ', '')
+#
+#         if not token:
+#             return jsonify({'mensagem': 'Token ausente'}), 401
+#
+#         try:
+#             payload = jwt.jwt.decode(token, os.getenv("SECRET_KEY", ""), algorithms=['HS256'])
+#             request.user_id = payload['user_id']
+#         except jwt.ExpiredSignatureError:
+#             return JSONResponse(status_code=401, content={'mensagem': 'Token expirado'})
+#         except jwt.InvalidTokenError:
+#             return SONResponse(status_code=401, content={'mensagem': 'Token inválido'})
+#
+#         return f(*args, **kwargs)
+#
+#     return decorated_function

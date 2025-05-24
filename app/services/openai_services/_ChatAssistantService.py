@@ -12,8 +12,7 @@ from typing import (
     Callable,
 )
 from functools import cache
-
-from flask import abort
+from fastapi import HTTPException
 from openai.types.beta import Thread
 from openai.types.beta.threads import Run
 
@@ -79,7 +78,7 @@ class ChatAssistantService(OpenAIServicesBase):
         if run.status == "requires_action":
             if callback is None:
                 await self.cancel_run_if_active(thread_id=thread.id)
-                raise abort(code=400, description="Callback cannot be None")
+                raise HTTPException(status_code=400, detail="Callback cannot be None")
 
             run = await self.handle_requires_action(run=run, thread_id=thread.id, callback=callback)
 
@@ -89,9 +88,9 @@ class ChatAssistantService(OpenAIServicesBase):
             return response_message
 
         if run.status in ["expired", "failed", "cancelled", "incomplete"]:
-            raise abort(code=500, description=run.last_error.message)
+            raise HTTPException(status_code=500, detail=run.last_error.message)
 
-        raise abort(code=404, description="Not found data")
+        raise HTTPException(status_code=404, detail="Not found data")
 
     async def get_response(self, thread_id: str):
 

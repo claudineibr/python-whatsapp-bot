@@ -1,11 +1,18 @@
+import logging
+import os
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
+from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
+load_dotenv()
+
+from app.config.settings import get_settings
+
+logger = logging.getLogger(__name__)
+
+settings = get_settings()
 
 
 class AsyncDatabase:
@@ -13,13 +20,13 @@ class AsyncDatabase:
         self._engine = None
         self._session = None
 
-    def init_app(self, app: Flask) -> None:
+    def init(self) -> None:
         self._engine = create_async_engine(
-            url=app.config["ASYNC_SQLALCHEMY_DATABASE_URI"],
-            echo=app.config.get("SQLALCHEMY_ECHO", False),
-            pool_size=app.config.get("SQLALCHEMY_POOL_SIZE", 20),
-            max_overflow=app.config.get("SQLALCHEMY_MAX_OVERFLOW", 10),
-            pool_pre_ping=app.config.get("SQLALCHEMY_POOL_PRE_PING", True)
+            url=settings.ASYNC_DATABASE_URI,
+            echo=os.getenv("SQLALCHEMY_ECHO", "false").lower() == "true",
+            pool_size=int(os.getenv("SQLALCHEMY_POOL_SIZE", 20)),
+            max_overflow=int(os.getenv("SQLALCHEMY_MAX_OVERFLOW", 10)),
+            pool_pre_ping=os.getenv("SQLALCHEMY_POOL_PRE_PING", "true").lower() == "true",
         )
         self._session = sessionmaker(
             bind=self._engine,
@@ -28,7 +35,7 @@ class AsyncDatabase:
         )
 
     @asynccontextmanager
-    async def get_async_session(self)-> AsyncGenerator[AsyncSession, None]:
+    async def get_async_session(self) -> AsyncGenerator[AsyncSession, None]:
         async with self._session() as session:
             yield session
 
@@ -39,6 +46,4 @@ class AsyncDatabase:
         return self._engine
 
 
-db = SQLAlchemy()
-migrate = Migrate()
 async_db = AsyncDatabase()

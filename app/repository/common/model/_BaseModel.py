@@ -6,13 +6,15 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import (
     Mapped,
+    DeclarativeBase,
     mapped_column,
 )
 
-from app.extensions import db
+class Base(DeclarativeBase):
+    pass
 
 
-class BaseModel(db.Model):
+class BaseModel(Base):
     __abstract__ = True
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)

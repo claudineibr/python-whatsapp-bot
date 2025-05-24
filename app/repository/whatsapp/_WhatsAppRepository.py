@@ -1,10 +1,11 @@
 import json
 from functools import cache
 
-from model import WhatsAppChatMessage
-from schemas import WhatsAppChatMessageCreate
-from .._BaseConnection import DatabaseConnection
 from sqlalchemy import select
+
+from app.model import WhatsAppChatMessage
+from app.schemas import WhatsAppChatMessageCreate
+from .._BaseConnection import DatabaseConnection
 
 
 @cache

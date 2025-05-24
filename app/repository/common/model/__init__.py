@@ -1,1 +1,1 @@
-from ._BaseModel import BaseModel
+from ._BaseModel import Base, BaseModel
