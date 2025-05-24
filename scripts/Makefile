@@ -1,7 +1,5 @@
 # Variáveis
 APP_NAME = phyton_app
-DOCKER_IMAGE = myapp-image
-DOCKER_CONTAINER = python-whatsapp-bot
 PYTHON = python3
 
 

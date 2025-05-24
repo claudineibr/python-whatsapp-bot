@@ -22,13 +22,13 @@ class Message(BaseModel):
 
 @whatsapp_route.get(path="/webhook")
 def webhook_get(request: Request):
-    return asyncio.run(_verify(request))
+    return asyncio.run(_verify(request=request))
 
 
 @whatsapp_route.post(path="/webhook")
 @signature_required
 def webhook_post(request: Request):
-    return asyncio.run(handle_message(request))
+    return asyncio.run(handle_message(request=request))
 
 
 @whatsapp_route.post(path="/send_message")
