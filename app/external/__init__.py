@@ -1,1 +1,1 @@
-from ._FlaskMessageHandler import FlaskMessageHandler
+from ._FastAPIMessageHandler import FastAPIMessageHandler

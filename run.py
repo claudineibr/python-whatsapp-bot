@@ -1,15 +1,16 @@
-import asyncio
 import logging
 
-from app.external import FlaskMessageHandler
+from app.external import FastAPIMessageHandler
 
 logger = logging.getLogger(__name__)
 
+
 if __name__ == "__main__":
 
-    logger.debug("Starting flask [{}] ...".format(__name__))
 
-    flask_message_handler = FlaskMessageHandler()
-    asyncio.run(flask_message_handler.run(host="0.0.0.0", port=8000, debug=True))
+    logger.debug("Starting API [{}] ...".format(__name__))
 
-    logger.debug("Flask [{}] running...".format(__name__))
+    flask_message_handler = FastAPIMessageHandler(debug=True)
+    flask_message_handler.run()
+
+    logger.debug("API [{}] running...".format(__name__))

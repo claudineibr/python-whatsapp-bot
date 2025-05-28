@@ -1,22 +1,21 @@
 import datetime
 import logging
 
-from flask import (
-    Blueprint,
-    current_app,
-    request,
-)
+from fastapi import APIRouter, Request
+from jwt import jwt
 
 from app.services.openai_services import ChatAssistantService
-
+from app.config.settings import get_settings
+settings = get_settings()
 logger = logging.getLogger(__name__)
 
 chat_assistant_service = ChatAssistantService()
-login_blueprint = Blueprint("login", import_name=__name__, url_prefix="/authorization")
+login_blueprint = APIRouter(prefix="/authorization")
 
-@login_blueprint.route(rule="/login", methods=["POST"])
-async def login():
-    data = request.get_json()
+
+@login_blueprint.post(path="/login")
+async def login(request: Request):
+    data = await request.json()
     user = data.get('userName')
     password = data.get('password')
 
@@ -30,5 +29,5 @@ def generate_authorization_token(user_id: int):
         'exp': datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=2),
         'iat': datetime.datetime.now(datetime.UTC)
     }
-    token = jwt.encode(payload, current_app.config["SECRET_KEY"], algorithm='HS256')
+    token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
     return token

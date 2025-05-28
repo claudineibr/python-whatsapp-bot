@@ -1,15 +1,7 @@
 # Variáveis
 APP_NAME = phyton_app
-DOCKER_IMAGE = myapp-image
-DOCKER_CONTAINER = python-whatsapp-bot
 PYTHON = python3
 
-# Use o comando docker-compose se tiver (ajuste conforme seu setup)
-DOCKER_COMPOSE = docker-compose
-
-# Variáveis para banco e migrações
-ALEMBIC = alembic
-DB_URI = ${ASYNC_DATABASE_URI}
 
 # Cria o ambiente virtual (caso não esteja usando Docker)
 venv:
@@ -19,11 +11,15 @@ venv:
 
 # Rodar o app (modo dev) dentro do container Docker
 run:
-	docker-compose up
+	docker-compose up --build
+
+# Entrar no shell do container
+build:
+	docker-compose build --no-cache
 
 # Entrar no shell do container
 shell:
-	docker exec -it $(DOCKER_CONTAINER) /bin/bash
+	docker-compose /bin/bash
 
 # Rodar migrações alembic (upgrade até o head)
 alembic-upgrade:
@@ -31,14 +27,15 @@ alembic-upgrade:
 
 # Criar nova migration (passar MESSAGE como argumento)
 alembic-revision:
-	docker-compose alembic revision --autogenerate -m "$(MSG)"
+	docker-compose exec python_app alembic revision --autogenerate -m "$(MSG)"
 
 # Rodar testes (ajuste comando de testes)
 test:
-	docker exec -it $(DOCKER_CONTAINER) pytest tests/
+	docker-compose pytest tests/
 
 # Limpar containers, volumes, redes criados pelo docker-compose
 clean:
 	docker-compose down -v --remove-orphans
+
 
 .PHONY: venv run shell alembic-upgrade alembic-revision test clean

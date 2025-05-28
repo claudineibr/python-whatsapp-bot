@@ -2,11 +2,8 @@ import json
 import logging
 from typing import Dict, Any
 
-from flask import (
-    Blueprint,
-    request,
-    jsonify,
-)
+from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse
 
 from app.services.openai_services import ChatAssistantService
 from app.util.formattings import format_currency
@@ -14,16 +11,18 @@ from app.util.formattings import format_currency
 logger = logging.getLogger(__name__)
 
 chat_assistant_service = ChatAssistantService()
-chat_assistant_blueprint = Blueprint("chat_assistant", import_name=__name__, url_prefix="/openai")
+chat_assistant_route = APIRouter(prefix="/openai")
 
 
-@chat_assistant_blueprint.route(rule="/chat_assistant/send_message", methods=["POST"])
-async def send_message():
-    message_body = request.json.get("message")
-    key = request.json.get("key")
+@chat_assistant_route.post(path="/chat_assistant/send_message")
+async def send_message(request: Request):
+    request = await request.json()
+    message_body = request.get("message")
+
+    key = request.get("key")
     data = {"key": key, "message": message_body}
     response = await chat_assistant_service.generate_response(data=data, callback=call_function)
-    return jsonify({"data": response}), 200
+    return JSONResponse(content={"data": response})
 
 
 def call_function(name: str, args: str) -> str:

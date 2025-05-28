@@ -10,11 +10,11 @@ services:
     image: ngrok/ngrok:latest
     depends_on:
       - python_app
+    env_file:
+      - .env
     command:
       - "http"
       - "http://host.docker.internal:8000"
-    environment:
-      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
     ports:
       - "4040:4040"
 
@@ -22,13 +22,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    restart: always
+    restart: unless-stopped
     env_file:
       - .env
     ports:
       - "8000:8000"
     environment:
-      - FLASK_ENV=development
+       - PYTHONUNBUFFERED=1
     volumes:
       - .:/app
     tty: true
