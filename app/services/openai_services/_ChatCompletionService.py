@@ -37,7 +37,10 @@ class ChatCompletionService(OpenAIServicesBase):
         if key not in session_data:
             initial_prompt = self._initial_prompt(data)
             session_data[key] = [
-                {"role": "system", "content": initial_prompt}
+                {
+                    "role": "system",
+                    "content": initial_prompt
+                }
             ]
 
         session_data[key].append({"role": "user", "content": message})

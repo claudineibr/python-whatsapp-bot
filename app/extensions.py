@@ -4,8 +4,7 @@ from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
 from dotenv import load_dotenv
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 load_dotenv()
 
 from app.config.settings import get_settings
@@ -18,7 +17,7 @@ settings = get_settings()
 class AsyncDatabase:
     def __init__(self):
         self._engine = None
-        self._session = None
+        self.async_session = None
 
     def init(self) -> None:
         self._engine = create_async_engine(
@@ -28,7 +27,7 @@ class AsyncDatabase:
             max_overflow=int(os.getenv("SQLALCHEMY_MAX_OVERFLOW", 10)),
             pool_pre_ping=os.getenv("SQLALCHEMY_POOL_PRE_PING", "true").lower() == "true",
         )
-        self._session = sessionmaker(
+        self.async_session = async_sessionmaker(
             bind=self._engine,
             class_=AsyncSession,
             expire_on_commit=False
@@ -36,8 +35,12 @@ class AsyncDatabase:
 
     @asynccontextmanager
     async def get_async_session(self) -> AsyncGenerator[AsyncSession, None]:
-        async with self._session() as session:
+        async with self.async_session() as session:
             yield session
+
+    # @asynccontextmanager
+    # def get_async_session(self) -> async_sessionmaker[AsyncSession]:
+    #     return self.async_session()
 
     @property
     def engine(self):

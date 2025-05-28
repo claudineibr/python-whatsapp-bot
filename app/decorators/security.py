@@ -1,3 +1,4 @@
+import json
 import logging
 import hashlib
 import hmac
@@ -24,15 +25,28 @@ def validate_signature(payload, signature):
 
 def signature_required(f):
     @wraps(f)
-    def decorated_function(*args, **kwargs):
+    async def decorated_function(*args, **kwargs):
+        request: Request = kwargs.get("request")
+        if request is None:
+            for arg in args:
+                if isinstance(arg, Request):
+                    request = arg
+                    break
+
+        if request is None:
+            return JSONResponse(status_code=400, content={"status": "error", "message": "Missing request object"})
+
         signature = request.headers.get("X-Hub-Signature-256", "")[7:]
-        if not validate_signature(payload=request.data.decode("utf-8"), signature=signature):
+        body_bytes = await request.body()
+        payload = body_bytes.decode("utf-8")
+
+        if not validate_signature(payload=payload, signature=signature):
             logger.info("Signature verification failed!")
-            return jsonify({"status": "error", "message": "Invalid signature"}), 403
-        return f(*args, **kwargs)
+            return JSONResponse(status_code=403, content={"status": "error", "message": "Invalid signature"})
+
+        return await f(*args, **kwargs)
 
     return decorated_function
-
 
 # def required_authorization(f):
 #     @wraps(f)

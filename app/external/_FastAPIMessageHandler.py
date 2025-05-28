@@ -62,8 +62,8 @@ class FastAPIMessageHandler(object):
         logger.debug("Registered whatsapp routes...")
 
         logger.debug("Registering chat_completion routes...")
-        from app.routes.chat_completion.chat_completion_routes import chat_completion_blueprint
-        self.app.include_router(chat_completion_blueprint)
+        from app.routes.chat_completion.chat_completion_routes import chat_completion_route
+        self.app.include_router(chat_completion_route)
         logger.debug("Registered chat_completion routes...")
 
         logger.debug("Registering chat_assistant routes...")

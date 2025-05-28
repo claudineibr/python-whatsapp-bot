@@ -22,7 +22,7 @@ async def send_message(request: Request):
     key = request.get("key")
     data = {"key": key, "message": message_body}
     response = await chat_assistant_service.generate_response(data=data, callback=call_function)
-    return JSONResponse(status_code=200, content={"data": response})
+    return JSONResponse(content={"data": response})
 
 
 def call_function(name: str, args: str) -> str:
